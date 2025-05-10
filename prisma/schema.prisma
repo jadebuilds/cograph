@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  avatarUrl String?
+  oauthId   String     @unique
+  proposals Proposal[]
+  comments  Comment[]
+
+  @@map("users")
+}
+
+model Notebook {
+  id        String     @id @default(uuid())
+  filePath  String     @unique
+  proposals Proposal[]
+
+  @@map("notebooks")
+}
+
+enum ProposalStatus {
+  DRAFT
+  ACTIVE
+  PASSED
+  REJECTED
+  EXPIRED
+}
+
+model Proposal {
+  id           String         @id @default(uuid())
+  title        String
+  notebook     Notebook       @relation(fields: [notebookId], references: [id])
+  notebookId   String
+  author       User           @relation(fields: [authorId], references: [id])
+  authorId     String
+  thresholdPct Float
+  quorum       Int
+  status       ProposalStatus @default(DRAFT)
+  comments     Comment[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("proposals")
+}
+
+model Comment {
+  id         String    @id @default(uuid())
+  proposal   Proposal  @relation(fields: [proposalId], references: [id])
+  proposalId String
+  author     User      @relation(fields: [authorId], references: [id])
+  authorId   String
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId   String?
+  replies    Comment[] @relation("CommentReplies")
+  content    String
+  createdAt  DateTime  @default(now())
+
+  @@map("comments")
+}
